@@ -114,4 +114,4 @@ Feel free to open issues for bugs, feature requests, or extension proposals.
 
 ## License
 
-MIT License © SynthKit contributors.
+[License](/LICENSE)
