@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
+from ..extensions import register_formatter
+
 
 def to_alpaca(sample: Dict[str, Any]) -> Dict[str, Any]:
     """Return a single Alpaca-style record."""
@@ -34,9 +36,6 @@ def to_openai_ft(sample: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-# Mapping of exporter slug -> callable transformer.
-FORMATTERS = {
-    "alpaca": to_alpaca,
-    "chatml": to_chatml,
-    "openai-ft": to_openai_ft,
-}
+register_formatter("alpaca", to_alpaca)
+register_formatter("chatml", to_chatml)
+register_formatter("openai-ft", to_openai_ft)

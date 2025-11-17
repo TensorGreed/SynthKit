@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Literal, List
+from typing import List
 
 from ..config import ForgeConfig
 from ..export.writers import reformat_and_write
@@ -12,7 +12,7 @@ from ..export.writers import reformat_and_write
 
 def run_package(
     cfg: ForgeConfig,
-    fmt: Literal["alpaca", "chatml", "openai-ft"] = "alpaca",
+    fmt: str = "alpaca",
 ) -> List[Path]:
     """Reformat audited files into JSONL files for downstream consumption."""
     packaged_dir = cfg.io.packaged_path

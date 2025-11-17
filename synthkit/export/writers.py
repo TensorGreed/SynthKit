@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Iterable, Dict, Any
 
-from .formats import FORMATTERS
+from ..extensions import get_formatter
 
 
 def write_jsonl(
@@ -27,6 +27,9 @@ def reformat_and_write(
     out_path: Path,
 ) -> None:
     """Convert records to the requested format then persist as JSONL."""
-    formatter = FORMATTERS[fmt]
+    try:
+        formatter = get_formatter(fmt)
+    except KeyError as exc:
+        raise ValueError(str(exc)) from exc
     formatted = (formatter(sample) for sample in samples)
     write_jsonl(formatted, out_path)

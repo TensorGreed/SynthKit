@@ -5,14 +5,16 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Literal, List
+from typing import List
 
 from ..config import ForgeConfig
 from ..models.router import ModelRouter
 from ..io.chunking import chunk_text
-from ..generation.qa_pairs import QAGenerator
-from ..generation.cot_pairs import CoTGenerator
+# Import generator modules for their registration side effects.
+from ..generation import qa_pairs as _qa_pairs  # noqa: F401
+from ..generation import cot_pairs as _cot_pairs  # noqa: F401
 from ..models.client_base import ChatMessage, ChatClient, ChatClientError
+from ..extensions import get_generator_factory
 
 logger = logging.getLogger(__name__)
 
@@ -39,17 +41,18 @@ def _summarize_chunk(
 
 def run_mint(
     cfg: ForgeConfig,
-    generator_type: Literal["qa", "cot"] = "qa",
+    generator_type: str = "qa",
 ) -> List[Path]:
     """Generate synthetic data for each harvested document."""
     router = ModelRouter(cfg)
     gen_client = router.for_stage(cfg.models.mint_generator)
     summarizer = _build_summarizer(router, cfg)
 
-    if generator_type == "qa":
-        generator = QAGenerator(gen_client, cfg)
-    else:
-        generator = CoTGenerator(gen_client, cfg)
+    try:
+        factory = get_generator_factory(generator_type)
+    except KeyError as exc:
+        raise ValueError(str(exc)) from exc
+    generator = factory(gen_client, cfg)
 
     minted_dir = cfg.io.minted_path
     minted_dir.mkdir(parents=True, exist_ok=True)

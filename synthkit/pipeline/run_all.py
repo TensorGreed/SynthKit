@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from ..config import ForgeConfig
 from .harvest import run_harvest
 from .mint import run_mint
@@ -13,8 +11,8 @@ from .package import run_package
 
 def run_pipeline(
     cfg: ForgeConfig,
-    generator_type: Literal["qa", "cot"] = "qa",
-    export_fmt: Literal["alpaca", "chatml", "openai-ft"] = "alpaca",
+    generator_type: str = "qa",
+    export_fmt: str = "alpaca",
 ) -> None:
     """Execute each stage in order, surfacing progress on stdout."""
     print("-> Stage 1: harvest")

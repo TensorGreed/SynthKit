@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 
 from .base import BaseGenerator, GeneratedItem
 from ..models.client_base import ChatMessage
+from ..extensions import register_generator
 
 logger = logging.getLogger(__name__)
 
@@ -56,3 +57,6 @@ class CoTGenerator(BaseGenerator):
                 )
             )
         return items
+
+
+register_generator("cot", lambda client, cfg: CoTGenerator(client, cfg))

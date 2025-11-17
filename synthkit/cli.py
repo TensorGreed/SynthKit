@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Sequence
+
 import typer
 
 from .config import load_config
+from .extensions import available_generator_types, available_formatter_names
 from .logging_config import configure_logging
 from .pipeline.harvest import run_harvest
 from .pipeline.mint import run_mint
@@ -13,6 +16,31 @@ from .pipeline.package import run_package
 from .pipeline.run_all import run_pipeline
 
 app = typer.Typer(help="SynthForge - synthetic data generation & curation toolkit")
+
+
+def _describe_options(values: Sequence[str]) -> str:
+    return ", ".join(values) if values else "none registered"
+
+
+def _normalize_choice(label: str, value: str, options: Sequence[str]) -> str:
+    normalized = value.lower()
+    if options and normalized not in options:
+        raise typer.BadParameter(
+            f"Unknown {label} '{value}'. Available: {_describe_options(options)}"
+        )
+    return normalized
+
+
+def _generator_help() -> str:
+    return f"Generator kind (registered: {_describe_options(available_generator_types())})."
+
+
+def _formatter_help() -> str:
+    return f"Export format (registered: {_describe_options(available_formatter_names())})."
+
+
+GENERATOR_DEFAULT = (available_generator_types()[0] if available_generator_types() else "qa")
+FORMATTER_DEFAULT = (available_formatter_names()[0] if available_formatter_names() else "alpaca")
 
 
 @app.callback()
@@ -46,11 +74,12 @@ def harvest(ctx: typer.Context):
 @app.command()
 def mint(
     ctx: typer.Context,
-    kind: str = typer.Option("qa", "--kind", help="qa | cot"),
+    kind: str = typer.Option(GENERATOR_DEFAULT, "--kind", help=_generator_help()),
 ):
     """Generate synthetic data from harvested documents."""
     cfg = ctx.obj
-    out = run_mint(cfg, generator_type=kind)  # type: ignore[arg-type]
+    normalized_kind = _normalize_choice("generator kind", kind, available_generator_types())
+    out = run_mint(cfg, generator_type=normalized_kind)
     typer.echo(f"Minted synthetic data into {len(out)} files.")
 
 
@@ -65,21 +94,24 @@ def audit(ctx: typer.Context):
 @app.command(name="package")
 def package_cmd(
     ctx: typer.Context,
-    fmt: str = typer.Option("alpaca", "--fmt", help="alpaca | chatml | openai-ft"),
+    fmt: str = typer.Option(FORMATTER_DEFAULT, "--fmt", help=_formatter_help()),
 ):
     """Export curated data into final training formats."""
     cfg = ctx.obj
-    out = run_package(cfg, fmt=fmt)  # type: ignore[arg-type]
+    normalized_fmt = _normalize_choice("format", fmt, available_formatter_names())
+    out = run_package(cfg, fmt=normalized_fmt)
     typer.echo(f"Packaged {len(out)} datasets.")
 
 
 @app.command(name="run-all")
 def run_all(
     ctx: typer.Context,
-    kind: str = typer.Option("qa", "--kind"),
-    fmt: str = typer.Option("alpaca", "--fmt"),
+    kind: str = typer.Option(GENERATOR_DEFAULT, "--kind", help=_generator_help()),
+    fmt: str = typer.Option(FORMATTER_DEFAULT, "--fmt", help=_formatter_help()),
 ):
     """Run the full pipeline end-to-end: harvest -> mint -> audit -> package."""
     cfg = ctx.obj
-    run_pipeline(cfg, generator_type=kind, export_fmt=fmt)  # type: ignore[arg-type]
+    normalized_kind = _normalize_choice("generator kind", kind, available_generator_types())
+    normalized_fmt = _normalize_choice("format", fmt, available_formatter_names())
+    run_pipeline(cfg, generator_type=normalized_kind, export_fmt=normalized_fmt)
     typer.echo("Pipeline completed.")
