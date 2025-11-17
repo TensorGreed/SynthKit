@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Literal, List
 
@@ -11,8 +12,9 @@ from ..models.router import ModelRouter
 from ..io.chunking import chunk_text
 from ..generation.qa_pairs import QAGenerator
 from ..generation.cot_pairs import CoTGenerator
-from ..models.client_base import ChatMessage
-from ..models.client_base import ChatClient
+from ..models.client_base import ChatMessage, ChatClient, ChatClientError
+
+logger = logging.getLogger(__name__)
 
 
 def _build_summarizer(router: ModelRouter, cfg: ForgeConfig) -> ChatClient:
@@ -53,33 +55,48 @@ def run_mint(
     minted_dir.mkdir(parents=True, exist_ok=True)
 
     outputs: List[Path] = []
-    for txt_file in cfg.io.harvested_path.glob("*.txt"):
-        text = txt_file.read_text(encoding="utf-8")
-        chunks = chunk_text(
-            text,
-            chunk_size=cfg.generation.chunk_size,
-            overlap=cfg.generation.chunk_overlap,
-        )
-
-        all_items = []
-        remaining = cfg.generation.max_pairs_per_doc
-        for idx, chunk in enumerate(chunks):
-            if remaining <= 0:
-                break
-            summary = _summarize_chunk(summarizer, chunk, max_tokens=256)
-            items = generator.generate(
-                chunk=chunk,
-                summary=summary,
-                num_items=min(remaining, 8),
-                chunk_meta={"source_file": str(txt_file), "chunk_index": idx},
+    try:
+        for txt_file in cfg.io.harvested_path.glob("*.txt"):
+            text = txt_file.read_text(encoding="utf-8")
+            chunks = chunk_text(
+                text,
+                chunk_size=cfg.generation.chunk_size,
+                overlap=cfg.generation.chunk_overlap,
             )
-            all_items.extend(items)
-            # Track how many samples we can still emit for the document.
-            remaining = cfg.generation.max_pairs_per_doc - len(all_items)
 
-        payload = [item.payload | {"meta": item.meta} for item in all_items]
-        out_path = minted_dir / (txt_file.stem + f".{generator_type}.json")
-        out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        outputs.append(out_path)
+            all_items = []
+            remaining = cfg.generation.max_pairs_per_doc
+            for idx, chunk in enumerate(chunks):
+                if remaining <= 0:
+                    break
+                try:
+                    summary = _summarize_chunk(summarizer, chunk, max_tokens=256)
+                except ChatClientError as exc:
+                    logger.error(
+                        "Summarizer failed for %s chunk %s: %s",
+                        txt_file.name,
+                        idx,
+                        exc,
+                    )
+                    break
+                items = generator.generate(
+                    chunk=chunk,
+                    summary=summary,
+                    num_items=min(remaining, 8),
+                    chunk_meta={"source_file": str(txt_file), "chunk_index": idx},
+                )
+                if not items:
+                    logger.warning(
+                        "Generator emitted no items for %s chunk %s", txt_file.name, idx
+                    )
+                all_items.extend(items)
+                # Track how many samples we can still emit for the document.
+                remaining = cfg.generation.max_pairs_per_doc - len(all_items)
 
-    return outputs
+            payload = [item.payload | {"meta": item.meta} for item in all_items]
+            out_path = minted_dir / (txt_file.stem + f".{generator_type}.json")
+            out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            outputs.append(out_path)
+        return outputs
+    finally:
+        router.close_all()

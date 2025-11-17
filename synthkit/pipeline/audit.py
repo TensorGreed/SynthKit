@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
-from typing import List
+from typing import Dict, Any, List
 
 from ..config import ForgeConfig
 from ..models.router import ModelRouter
 from ..curation.llm_judge import LLMJudge
+
+logger = logging.getLogger(__name__)
+
+
+def _is_valid_sample(sample: Dict[str, Any]) -> bool:
+    """Basic schema validation before calling expensive LLM judges."""
+    if not isinstance(sample, dict):
+        return False
+    question = sample.get("question")
+    answer = sample.get("answer", sample.get("response"))
+    return isinstance(question, str) and isinstance(answer, str)
 
 
 def run_audit(cfg: ForgeConfig) -> List[Path]:
@@ -21,27 +33,36 @@ def run_audit(cfg: ForgeConfig) -> List[Path]:
     audited_dir.mkdir(parents=True, exist_ok=True)
 
     outputs: List[Path] = []
-    for minted_file in cfg.io.minted_path.glob("*.json"):
-        raw = json.loads(minted_file.read_text(encoding="utf-8"))
-        curated = []
-        for sample in raw:
-            judged = judge.judge(sample)
-            if judged.keep:
-                curated.append(
-                    sample
-                    | {
-                        "score": judged.score,
-                        "label": judged.label,
-                        "judge_rationale": judged.rationale,
-                    }
-                )
+    try:
+        for minted_file in cfg.io.minted_path.glob("*.json"):
+            raw = json.loads(minted_file.read_text(encoding="utf-8"))
+            if not isinstance(raw, list):
+                logger.warning("Skipping %s; expected list payload", minted_file.name)
+                continue
+            curated = []
+            for sample in raw:
+                if not _is_valid_sample(sample):
+                    logger.warning("Dropping malformed sample from %s", minted_file.name)
+                    continue
+                judged = judge.judge(sample)
+                if judged.keep:
+                    curated.append(
+                        sample
+                        | {
+                            "score": judged.score,
+                            "label": judged.label,
+                            "judge_rationale": judged.rationale,
+                        }
+                    )
 
-        out_path = audited_dir / minted_file.name.replace(".json", ".audited.json")
-        # Persist curated payloads with deterministic formatting for diff-friendly review.
-        out_path.write_text(
-            json.dumps(curated, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        outputs.append(out_path)
+            out_path = audited_dir / minted_file.name.replace(".json", ".audited.json")
+            # Persist curated payloads with deterministic formatting for diff-friendly review.
+            out_path.write_text(
+                json.dumps(curated, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            outputs.append(out_path)
+    finally:
+        router.close_all()
 
     return outputs

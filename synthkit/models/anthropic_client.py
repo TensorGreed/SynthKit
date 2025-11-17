@@ -3,24 +3,34 @@
 from __future__ import annotations
 
 import os
-from typing import List
+from typing import List, Optional
 
 import requests
+from requests import Session
+from requests.exceptions import RequestException
 
-from .client_base import ChatClient, ChatMessage
+from .client_base import ChatClient, ChatMessage, ChatClientError
 from ..config import ProviderConfig
+from .session import create_retry_session
 
 
 class AnthropicChatClient(ChatClient):
     """Wrap the Claude Messages API with the SynthKit client protocol."""
 
-    def __init__(self, provider: ProviderConfig, model_name: str):
+    def __init__(
+        self,
+        provider: ProviderConfig,
+        model_name: str,
+        *,
+        session: Optional[Session] = None,
+    ):
         self._cfg = provider
         self._model_name = model_name
         api_key_env = provider.api_key_env or "ANTHROPIC_API_KEY"
         self._api_key = os.environ.get(api_key_env)
         if not self._api_key:
             raise RuntimeError(f"Missing API key env var: {api_key_env}")
+        self._session = session or create_retry_session()
 
     def chat(
         self,
@@ -47,7 +57,20 @@ class AnthropicChatClient(ChatClient):
             ],
             "system": "\n".join(message.content for message in messages if message.role == "system"),
         }
-        resp = requests.post(url, json=payload, headers=headers, timeout=60)
-        resp.raise_for_status()
+        try:
+            resp = self._session.post(url, json=payload, headers=headers, timeout=60)
+            resp.raise_for_status()
+        except RequestException as exc:  # pragma: no cover - network failure
+            status = getattr(exc.response, "status_code", None)
+            raise ChatClientError(
+                provider="anthropic",
+                model=self._model_name,
+                message=str(exc),
+                status_code=status,
+            ) from exc
         data = resp.json()
         return "".join(part["text"] for part in data["content"] if part["type"] == "text")
+
+    def close(self) -> None:
+        """Release the underlying HTTP session."""
+        self._session.close()

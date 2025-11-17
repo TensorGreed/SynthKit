@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import List, Optional, Dict, Any
 
 from .base import BaseGenerator, GeneratedItem
 from ..models.client_base import ChatMessage
+
+logger = logging.getLogger(__name__)
 
 
 class CoTGenerator(BaseGenerator):
@@ -32,6 +35,7 @@ class CoTGenerator(BaseGenerator):
             data = json.loads(raw)
         except json.JSONDecodeError:
             # The generator prompt contract states it returns JSON; drop chunk if not.
+            logger.warning("Failed to parse CoT generator output for %s", chunk_meta)
             return []
 
         items: List[GeneratedItem] = []

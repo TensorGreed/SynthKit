@@ -19,3 +19,6 @@ requires-python = ">=3.10"
 
 [project.scripts]
 synthforge = "synthforge.cli:app"
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]

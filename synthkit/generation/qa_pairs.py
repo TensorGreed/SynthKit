@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import List, Optional, Dict, Any
 
 from .base import BaseGenerator, GeneratedItem
 from ..models.client_base import ChatMessage
+
+logger = logging.getLogger(__name__)
 
 
 class QAGenerator(BaseGenerator):
@@ -32,6 +35,7 @@ class QAGenerator(BaseGenerator):
             data = json.loads(raw)
         except json.JSONDecodeError:
             # The downstream pipeline expects JSON arrays; skip malformed responses.
+            logger.warning("Failed to parse QA generator output for %s", chunk_meta)
             return []
 
         items: List[GeneratedItem] = []

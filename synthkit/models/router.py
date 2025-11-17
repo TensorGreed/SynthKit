@@ -39,3 +39,11 @@ class ModelRouter:
         client = _build_client(provider_cfg, ref.name)
         self._cache[key] = client
         return client
+
+    def close_all(self) -> None:
+        """Close all cached clients and clear the memoized map."""
+        for client in self._cache.values():
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()
+        self._cache.clear()
