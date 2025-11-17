@@ -8,6 +8,7 @@ from .client_base import ChatClient
 from .openai_client import OpenAIChatClient
 from .anthropic_client import AnthropicChatClient
 from .http_client import HTTPChatClient
+from .ollama_client import OllamaChatClient
 from ..config import ForgeConfig, ModelRef, ProviderConfig
 
 
@@ -19,6 +20,8 @@ def _build_client(provider_cfg: ProviderConfig, model_name: str) -> ChatClient:
         return AnthropicChatClient(provider_cfg, model_name)
     if provider_cfg.type == "http":
         return HTTPChatClient(provider_cfg, model_name)
+    if provider_cfg.type == "ollama":
+        return OllamaChatClient(provider_cfg, model_name)
     raise ValueError(f"Unknown provider type: {provider_cfg.type}")
 
 

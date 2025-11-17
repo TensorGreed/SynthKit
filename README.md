@@ -5,7 +5,7 @@ SynthKit is a batteries-included toolkit for harvesting raw documents, generatin
 ## Why SynthKit?
 
 - **End-to-end workflow**: Harvest, mint, audit, and package stages are wired together with a single CLI.
-- **Provider flexibility**: Works with OpenAI, Anthropic, or any OpenAI-compatible HTTP backend.
+- **Provider flexibility**: Works with OpenAI, Anthropic, Ollama, or any OpenAI-compatible HTTP backend.
 - **Extensible architecture**: Register your own generators and exporters without forking the core.
 - **Production-conscious**: Typed configuration, retry-enabled HTTP clients, and robust logging paths.
 
@@ -27,7 +27,7 @@ Project settings live under `config/project.yaml`. The schema is defined in `syn
 - `models`: Logical references to the LLMs used per stage.
 - `prompts`: Templates for QA/COT generation and rating.
 - `generation`/`curation`: Tunable hyperparameters (chunking size, min judge score, etc.).
-- `providers`: Provider definitions (`api_base`, `api_key_env`, optional extras).
+- `providers`: Provider definitions (`type` = `openai` | `anthropic` | `http` | `ollama`, API base, auth settings, etc.).
 
 Copy `config/project.example.yaml` to `config/project.yaml` and customize paths, models, and prompts for your environment.
 
@@ -53,6 +53,25 @@ python -m synthkit.cli run-all --kind qa --fmt alpaca
 ```
 
 Each command respects the `--config` flag for alternative configs and `--log-level` for logging verbosity.
+
+### Using Ollama / Open Models
+
+1. Install [Ollama](https://ollama.com/) and run `ollama serve` locally (default `http://localhost:11434`).
+2. Pull your desired model (e.g., `ollama pull mistral`).
+3. Configure a provider entry:
+
+   ```yaml
+   providers:
+     local-ollama:
+       type: ollama
+       api_base: http://localhost:11434
+   models:
+     mint_generator:
+       provider: local-ollama
+       name: mistral
+   ```
+
+No API key is required; SynthKit will call `/api/chat` with non-streaming requests and respect `temperature`/`max_tokens` from the config. Use `--kind qa` (or your custom generator) exactly as with hosted providers.
 
 ## Extending SynthKit
 
