@@ -1,7 +1,11 @@
+"""Opinionated logging configuration shared by CLI entry points."""
+
 import logging
 import sys
 
+
 def configure_logging(level: str = "INFO") -> None:
+    """Configure the root logger with a single stdout handler."""
     numeric = getattr(logging, level.upper(), logging.INFO)
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(

@@ -1,6 +1,10 @@
+﻿"""OpenAI native client that satisfies the shared chat protocol."""
+
 from __future__ import annotations
+
 import os
 from typing import List
+
 import requests
 
 from .client_base import ChatClient, ChatMessage
@@ -8,6 +12,8 @@ from ..config import ProviderConfig
 
 
 class OpenAIChatClient(ChatClient):
+    """Light wrapper around OpenAI's /chat/completions endpoint."""
+
     def __init__(self, provider: ProviderConfig, model_name: str):
         self._cfg = provider
         self._model_name = model_name
@@ -22,6 +28,7 @@ class OpenAIChatClient(ChatClient):
         temperature: float,
         max_tokens: int,
     ) -> str:
+        """Perform a chat completion request using the configured credentials."""
         url = self._cfg.api_base.rstrip("/") + "/chat/completions"
         headers = {
             "Authorization": f"Bearer {self._api_key}",
@@ -29,7 +36,7 @@ class OpenAIChatClient(ChatClient):
         }
         payload = {
             "model": self._model_name,
-            "messages": [m.__dict__ for m in messages],
+            "messages": [message.__dict__ for message in messages],
             "temperature": temperature,
             "max_tokens": max_tokens,
         }

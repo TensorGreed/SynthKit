@@ -1,4 +1,7 @@
+﻿"""Factory for memoizing chat clients keyed by logical stage references."""
+
 from __future__ import annotations
+
 from typing import Dict
 
 from .client_base import ChatClient
@@ -9,6 +12,7 @@ from ..config import ForgeConfig, ModelRef, ProviderConfig
 
 
 def _build_client(provider_cfg: ProviderConfig, model_name: str) -> ChatClient:
+    """Instantiate the correct provider-specific client."""
     if provider_cfg.type == "openai":
         return OpenAIChatClient(provider_cfg, model_name)
     if provider_cfg.type == "anthropic":
@@ -19,15 +23,14 @@ def _build_client(provider_cfg: ProviderConfig, model_name: str) -> ChatClient:
 
 
 class ModelRouter:
-    """
-    Small utility that gives you a ChatClient for a logical stage model.
-    """
+    """Cache chat clients so each stage reuses HTTP sessions where possible."""
 
     def __init__(self, cfg: ForgeConfig):
         self._cfg = cfg
         self._cache: Dict[str, ChatClient] = {}
 
     def for_stage(self, ref: ModelRef) -> ChatClient:
+        """Return (and memoize) the client for the requested model reference."""
         key = f"{ref.provider}:{ref.name}"
         if key in self._cache:
             return self._cache[key]

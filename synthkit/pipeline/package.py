@@ -1,4 +1,7 @@
+﻿"""Package stage that reformats curated samples into export schemas."""
+
 from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Literal, List
@@ -11,6 +14,7 @@ def run_package(
     cfg: ForgeConfig,
     fmt: Literal["alpaca", "chatml", "openai-ft"] = "alpaca",
 ) -> List[Path]:
+    """Reformat audited files into JSONL files for downstream consumption."""
     packaged_dir = cfg.io.packaged_path
     packaged_dir.mkdir(parents=True, exist_ok=True)
 

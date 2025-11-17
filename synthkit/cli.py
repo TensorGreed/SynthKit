@@ -1,4 +1,7 @@
+﻿"""Typer-powered entry points for the SynthKit pipeline."""
+
 from __future__ import annotations
+
 import typer
 
 from .config import load_config
@@ -9,7 +12,7 @@ from .pipeline.audit import run_audit
 from .pipeline.package import run_package
 from .pipeline.run_all import run_pipeline
 
-app = typer.Typer(help="SynthForge – synthetic data generation & curation toolkit")
+app = typer.Typer(help="SynthForge - synthetic data generation & curation toolkit")
 
 
 @app.callback()
@@ -18,13 +21,14 @@ def main(
     config: str = typer.Option("config/project.example.yaml", "--config", "-c"),
     log_level: str = typer.Option("INFO", "--log-level"),
 ):
+    """Initialize logging and load the project config before running a command."""
     configure_logging(log_level)
     ctx.obj = load_config(config)
 
 
 @app.command()
 def system_check(ctx: typer.Context):
-    """Basic sanity checks."""
+    """Print a summary of the resolved configuration for quick validation."""
     cfg = ctx.obj
     typer.echo(f"Loaded config with input root: {cfg.io.input_root}")
     typer.echo(f"Working root: {cfg.io.working_root}")
@@ -44,7 +48,7 @@ def mint(
     ctx: typer.Context,
     kind: str = typer.Option("qa", "--kind", help="qa | cot"),
 ):
-    """Generate synthetic data."""
+    """Generate synthetic data from harvested documents."""
     cfg = ctx.obj
     out = run_mint(cfg, generator_type=kind)  # type: ignore[arg-type]
     typer.echo(f"Minted synthetic data into {len(out)} files.")
@@ -75,7 +79,7 @@ def run_all(
     kind: str = typer.Option("qa", "--kind"),
     fmt: str = typer.Option("alpaca", "--fmt"),
 ):
-    """Run full pipeline: harvest → mint → audit → package."""
+    """Run the full pipeline end-to-end: harvest -> mint -> audit -> package."""
     cfg = ctx.obj
     run_pipeline(cfg, generator_type=kind, export_fmt=fmt)  # type: ignore[arg-type]
     typer.echo("Pipeline completed.")

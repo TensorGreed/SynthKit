@@ -1,4 +1,7 @@
+﻿"""Writers that persist curated samples in a streaming-friendly JSONL format."""
+
 from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import Iterable, Dict, Any
@@ -10,10 +13,12 @@ def write_jsonl(
     samples: Iterable[Dict[str, Any]],
     out_path: Path,
 ) -> None:
+    """Write iterable samples to ``out_path`` as JSON lines."""
+    # Ensure parent directories exist before streaming out the file.
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8") as f:
-        for s in samples:
-            f.write(json.dumps(s, ensure_ascii=False) + "\n")
+        for sample in samples:
+            f.write(json.dumps(sample, ensure_ascii=False) + "\n")
 
 
 def reformat_and_write(
@@ -21,6 +26,7 @@ def reformat_and_write(
     fmt: str,
     out_path: Path,
 ) -> None:
+    """Convert records to the requested format then persist as JSONL."""
     formatter = FORMATTERS[fmt]
-    formatted = (formatter(s) for s in samples)
+    formatted = (formatter(sample) for sample in samples)
     write_jsonl(formatted, out_path)
