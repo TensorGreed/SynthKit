@@ -1,0 +1,100 @@
+io:
+  input_root: "./input_docs"
+  working_root: "./forge_workspace"
+
+models:
+  harvest_summarizer:
+    provider: "openai"
+    name: "gpt-5-mini"
+  mint_generator:
+    provider: "openai"
+    name: "gpt-5.1"
+  audit_judge:
+    provider: "anthropic"
+    name: "claude-3.7-sonnet"
+  package_validator:
+    provider: "openai"
+    name: "gpt-5-mini"
+
+providers:
+  openai:
+    type: "openai"
+    api_base: "https://api.openai.com/v1"
+    api_key_env: "OPENAI_API_KEY"
+
+  anthropic:
+    type: "anthropic"
+    api_base: "https://api.anthropic.com/v1"
+    api_key_env: "ANTHROPIC_API_KEY"
+
+  local_vllm:
+    type: "http"
+    api_base: "http://localhost:8000/v1"
+
+generation:
+  temperature: 0.7
+  max_tokens: 1024
+  chunk_size: 4000
+  chunk_overlap: 200
+  max_pairs_per_doc: 30
+
+curation:
+  min_score: 7.0
+  max_tokens: 512
+
+prompts:
+  qa_generation: |
+    You are generating question-answer pairs for fine-tuning.
+    Use ONLY the provided text, do NOT invent facts.
+    Text summary: {summary}
+
+    Text:
+    ---
+    {text}
+    ---
+
+    Create {num_pairs} diverse, precise QA pairs as JSON:
+    [
+      {{ "question": "...", "answer": "..." }},
+      ...
+    ]
+
+  cot_generation: |
+    You are generating chain-of-thought QA data.
+
+    Given the text:
+    {text}
+
+    Produce {num_pairs} items like:
+    [
+      {{
+        "question": "...",
+        "reasoning": "step by step reasoning...",
+        "answer": "final answer"
+      }},
+      ...
+    ]
+
+    Use only information in the text.
+
+  qa_rating: |
+    You are grading a question-answer pair from a synthetic dataset.
+
+    Question:
+    {question}
+
+    Answer:
+    {answer}
+
+    Rate from 1.0 to 10.0 based on:
+    - Accuracy (0-3)
+    - Relevance to question (0-2)
+    - Clarity (0-2)
+    - Usefulness / coverage (0-3)
+
+    Respond ONLY with a JSON object:
+    {{
+      "score": <float>,
+      "label": "<one of: excellent, ok, bad>",
+      "reason": "<short explanation>"
+    }}
