@@ -55,10 +55,12 @@ class OpenAIChatClient(ChatClient):
             resp.raise_for_status()
         except RequestException as exc:  # pragma: no cover - network failure
             status = getattr(exc.response, "status_code", None)
+            detail = getattr(exc.response, "text", "") or str(exc)
             raise ChatClientError(
                 provider="openai",
                 model=self._model_name,
-                message=str(exc),
+                # message=str(exc),
+                message=detail,
                 status_code=status,
             ) from exc
         data = resp.json()

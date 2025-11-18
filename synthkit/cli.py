@@ -46,8 +46,8 @@ FORMATTER_DEFAULT = (available_formatter_names()[0] if available_formatter_names
 @app.callback()
 def main(
     ctx: typer.Context,
-    config: str = typer.Option("config/project.example.yaml", "--config", "-c"),
-    log_level: str = typer.Option("INFO", "--log-level"),
+    config: str = typer.Option("config/project.yaml", "--config", "-c"),
+    log_level: str = typer.Option("DEBUG", "--log-level"),
 ):
     """Initialize logging and load the project config before running a command."""
     configure_logging(log_level)
@@ -115,3 +115,7 @@ def run_all(
     normalized_fmt = _normalize_choice("format", fmt, available_formatter_names())
     run_pipeline(cfg, generator_type=normalized_kind, export_fmt=normalized_fmt)
     typer.echo("Pipeline completed.")
+
+
+if __name__ == "__main__":
+    app()

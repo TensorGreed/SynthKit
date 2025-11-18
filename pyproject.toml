@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "synthforge"
+name = "synthkit"
 version = "0.1.0"
 description = "Extensible synthetic data generation and curation toolkit"
 authors = [{ name = "You", email = "you@example.com" }]
@@ -18,7 +18,10 @@ dependencies = [
 requires-python = ">=3.10"
 
 [project.scripts]
-synthforge = "synthforge.cli:app"
+synthkit = "synthkit.cli:app"
 
 [project.optional-dependencies]
 test = ["pytest>=8.0"]
+
+[tool.setuptools]
+packages = ["synthkit"]

@@ -36,7 +36,14 @@ class QAGenerator(BaseGenerator):
             data = json.loads(raw)
         except json.JSONDecodeError:
             # The downstream pipeline expects JSON arrays; skip malformed responses.
-            logger.warning("Failed to parse QA generator output for %s", chunk_meta)
+            preview = raw.strip().replace("\n", " ")
+            if len(preview) > 400:
+                preview = preview[:400] + "..."
+            logger.warning(
+                "Failed to parse QA generator output for %s. Raw preview: %s",
+                chunk_meta,
+                preview or "<empty response>",
+            )
             return []
 
         items: List[GeneratedItem] = []

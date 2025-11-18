@@ -82,11 +82,25 @@ def run_mint(
                         exc,
                     )
                     break
+                logger.debug(
+                    "Requesting up to %s %s items for %s chunk %s (remaining=%s)",
+                    min(remaining, 8),
+                    generator_type,
+                    txt_file.name,
+                    idx,
+                    remaining,
+                )
                 items = generator.generate(
                     chunk=chunk,
                     summary=summary,
                     num_items=min(remaining, 8),
                     chunk_meta={"source_file": str(txt_file), "chunk_index": idx},
+                )
+                logger.debug(
+                    "Generator returned %s items for %s chunk %s",
+                    len(items),
+                    txt_file.name,
+                    idx,
                 )
                 if not items:
                     logger.warning(
