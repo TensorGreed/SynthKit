@@ -73,6 +73,9 @@ Each command respects the `--config` flag for alternative configs and `--log-lev
 
 No API key is required; SynthKit will call `/api/chat` with non-streaming requests and respect `temperature`/`max_tokens` from the config. Use `--kind qa` (or your custom generator) exactly as with hosted providers.
 
+### Using vllm / Open Models
+<TO_BE_ADDED>
+
 ## Extending SynthKit
 
 The `synthkit.extensions` module exposes registries for generator factories and export formatters:
