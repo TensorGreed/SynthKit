@@ -36,6 +36,7 @@ class HTTPChatClient(ChatClient):
         """Send the request to the configured base URL."""
         url = self._cfg.api_base.rstrip("/") + "/chat/completions"
         headers = {
+            "Authorization": "Bearer my-secret-key",
             "Content-Type": "application/json",
         }
         payload = {

@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Iterable, Dict, Any
 
 from ..extensions import get_formatter
+# Import formatter definitions for their registration side-effects.
+from . import formats as _formats  # noqa: F401
 
 
 def write_jsonl(

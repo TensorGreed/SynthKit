@@ -44,7 +44,7 @@ class OllamaChatClient(ChatClient):
             },
         }
         try:
-            resp = self._session.post(url, json=payload, timeout=120)
+            resp = self._session.post(url, json=payload, timeout=600)
             resp.raise_for_status()
         except RequestException as exc:  # pragma: no cover - network failure
             status = getattr(exc.response, "status_code", None)
