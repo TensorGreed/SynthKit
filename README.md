@@ -75,7 +75,7 @@ No API key is required; SynthKit will call `/api/chat` with non-streaming reques
 
 ### Using vllm / Open Models
 I have used AMD Instinct MI300X GPU droplet on DigitalOcean for my testing. Feel free to modify the steps for the GPU of your choice.
-```
+```shell
 apt update && apt upgrade -y
 
 apt install -y ca-certificates curl gnupg
