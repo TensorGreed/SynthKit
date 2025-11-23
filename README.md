@@ -74,7 +74,56 @@ Each command respects the `--config` flag for alternative configs and `--log-lev
 No API key is required; SynthKit will call `/api/chat` with non-streaming requests and respect `temperature`/`max_tokens` from the config. Use `--kind qa` (or your custom generator) exactly as with hosted providers.
 
 ### Using vllm / Open Models
-<TO_BE_ADDED>
+I have used AMD Instinct MI300X GPU droplet on DigitalOcean for my testing. Feel free to modify the steps for the GPU of your choice.
+```
+apt update && apt upgrade -y
+
+apt install -y ca-certificates curl gnupg
+
+install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg   | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu \
+$(lsb_release -cs) stable"   > /etc/apt/sources.list.d/docker.list
+
+apt install -y docker-ce docker-ce-cli containerd.io
+
+docker pull rocm/vllm:rocm6.2_mi300_ubuntu20.04_py3.9_vllm_0.6.4
+
+export MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct  # Model of your choice
+export DOCKER_IMG=rocm/vllm:rocm6.2_mi300_ubuntu20.04_py3.9_vllm_0.6.4
+export HOST_PORT=8000
+export HF_TOKEN="<HUGGINGFACE_TOKEN>"
+export MODEL=mistralai/Mistral-7B-Instruct-v0.3  # Model of your choice
+
+docker run --rm  \   
+--device=/dev/kfd --device=/dev/dri --group-add video  \  
+--shm-size 16G  \  
+-p $HOST_PORT:8000  \  
+--security-opt seccomp=unconfined  \
+--security-opt apparmor=unconfined  \  
+--cap-add=SYS_PTRACE  \  
+-v $(pwd):/workspace  \  
+--env HUGGINGFACE_HUB_CACHE=/workspace  \    
+--env VLLM_USE_TRITON_FLASH_ATTN=0  \ 
+--env PYTORCH_TUNABLEOP_ENABLED=1  \ 
+--env HF_TOKEN=$HF_TOKEN  \ 
+$DOCKER_IMG python3 -m vllm.entrypoints.openai.api_server  \ 
+--model $MODEL  \ 
+--host 0.0.0.0  \ 
+--port 8000  \ 
+--dtype float16  \ 
+--gpu-memory-utilization 0.9  \ 
+--max-model-len 8192  \ 
+--max-num-batched-tokens 32768  \ 
+--swap-space 16  \ 
+--disable-log-requests  \      
+--api-key my-secret-key
+```
 
 ## Extending SynthKit
 
