@@ -42,8 +42,8 @@ class GenerationSettings:
     temperature: float = 0.7
     max_tokens: int = 1024
     chunk_size: int = 4000
-    chunk_overlap: int = 200
-    max_pairs_per_doc: int = 50
+    chunk_overlap: int = 400
+    max_pairs_per_doc: int = 500
 
 
 @dataclass
